@@ -1,0 +1,52 @@
+site_name: transcriber
+repo_url: https://github.com/dscoular/transcriber
+site_url: https://dscoular.github.io/transcriber
+site_description: A python script which uses whisper to transcribe videos and outputs SRT files.
+site_author: Doug Scoular
+edit_uri: edit/main/docs/
+repo_name: dscoular/transcriber
+copyright: Maintained by <a href="https://dscoular.com">dscoular</a>.
+
+nav:
+  - Home: index.md
+  - Modules: modules.md
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          paths: ["src/transcriber"]
+theme:
+  name: material
+  feature:
+    tabs: true
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: white
+      accent: deep orange
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: black
+      accent: deep orange
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  icon:
+    repo: fontawesome/brands/github
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/dscoular/transcriber
+    - icon: fontawesome/brands/python
+      link: https://pypi.org/project/transcriber
+
+markdown_extensions:
+  - toc:
+      permalink: true
+  - pymdownx.arithmatex:
+      generic: true
