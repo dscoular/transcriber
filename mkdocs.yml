@@ -5,17 +5,24 @@ site_description: A python script which uses whisper to transcribe videos and ou
 site_author: Doug Scoular
 edit_uri: edit/main/docs/
 repo_name: dscoular/transcriber
-copyright: Maintained by <a href="https://dscoular.com">dscoular</a>.
-
+copyright: |
+  Copyright &copy; 2025 Doug Scoular<br>
+  All rights reserved. Licensed under the MIT license.
 nav:
   - Home: index.md
+  - 🚀 Getting Started: starting.md
+  - Using Docker: docker.md
   - Modules: modules.md
+  - Coverage: coverage.md
 plugins:
   - search
   - mkdocstrings:
       handlers:
         python:
           paths: ["src/transcriber"]
+  - coverage:
+      page_path: coverage
+      html_report_dir: htmlcov
 theme:
   name: material
   feature:
@@ -50,3 +57,10 @@ markdown_extensions:
       permalink: true
   - pymdownx.arithmatex:
       generic: true
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences

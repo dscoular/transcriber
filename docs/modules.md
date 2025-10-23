@@ -1,1 +1,1 @@
-::: transcriber.foo
+::: transcriber.transcribe

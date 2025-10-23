@@ -18,7 +18,7 @@ check: ## Run code quality tools.
 .PHONY: test
 test: ## Test the code with pytest
 	@echo "🚀 Testing code: Running pytest"
-	@uv run python -m pytest --cov --cov-config=pyproject.toml --cov-report=xml
+	@uv run python -m pytest --cov --cov-config=pyproject.toml
 
 .PHONY: build
 build: clean-build ## Build wheel file
@@ -37,6 +37,18 @@ docs-test: ## Test if documentation can be built without warnings or errors
 .PHONY: docs
 docs: ## Build and serve the documentation
 	@uv run mkdocs serve
+
+.PHONY: man
+man: ## Build and serve the documentation
+	@uv run python src/transcriber/transcribe.py --help
+
+.PHONY: transcribe
+transcribe: ## Transcribe video files to SRT subtitle files interactively
+	@uv run python src/transcriber/transcribe.py --interactive --exclude \
+	"_Model/sheets/jpgs/output.mp4" \
+	"_Model/OD_Textures/Open Source/AmbientCG/space-generation-success.mp4" \
+	"_Model/OD_Textures/Open Source/AmbientCG/space-generation-fail.mp4" \
+	"_Model/Animation/final video.mp4"
 
 .PHONY: help
 help:

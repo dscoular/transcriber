@@ -14,8 +14,15 @@ classifiers = [
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
-    "Programming Language :: Python :: 3.13",
+    # "Programming Language :: Python :: 3.13", Waiting for AudioSegment to be updated for 3.13.
     "Topic :: Software Development :: Libraries :: Python Modules",
+]
+
+dependencies = [
+	     "numpy",
+	     "pysrt",
+	     "openai-whisper",
+	     "pydub"
 ]
 
 [project.urls]
@@ -23,9 +30,15 @@ Homepage = "https://dscoular.github.io/transcriber/"
 Repository = "https://github.com/dscoular/transcriber"
 Documentation = "https://dscoular.github.io/transcriber/"
 
+[project.scripts]
+transcriber = "transcriber.transcribe:main"
+
 [dependency-groups]
 dev = [
     "pytest>=7.2.0",
+    "pytest-mock>=3.15.0",
+    "pytest-sugar>=1.1.0",
+    "pytest-clarity>=1.0.1",
     "pre-commit>=2.20.0",
     "tox-uv>=1.11.3",
     "deptry>=0.23.0",
@@ -35,6 +48,25 @@ dev = [
     "mkdocs>=1.4.2",
     "mkdocs-material>=8.5.10",
     "mkdocstrings[python]>=0.26.1",
+    "mkdocs-coverage>=2.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.2.0",
+    "pytest-mock>=3.15.0",
+    "pytest-sugar>=1.1.0",
+    "pytest-clarity>=1.0.1",
+    "pre-commit>=2.20.0",
+    "tox-uv>=1.11.3",
+    "deptry>=0.23.0",
+    "mypy>=0.991",
+    "pytest-cov>=4.0.0",
+    "ruff>=0.11.5",
+    "mkdocs>=1.4.2",
+    "mkdocs-material>=8.5.10",
+    "mkdocstrings[python]>=0.26.1",
+    "mkdocs-coverage>=2.0.0",
 ]
 
 [build-system]
@@ -54,11 +86,46 @@ warn_return_any = true
 warn_unused_ignores = true
 show_error_codes = true
 
+[[tool.mypy.overrides]]
+module = [
+    "pysrt",
+    "whisper",
+    "pydub",
+    "pydub.*"
+]
+ignore_missing_imports = true
+
+[tool.deptry.per_rule_ignores]
+DEP002 = [
+       "pytest",
+       "pytest-mock",
+       "pytest-sugar",
+       "pytest-clarity",
+       "pre-commit",
+       "tox-uv",
+       "deptry",
+       "mypy",
+       "pytest-cov",
+       "ruff",
+       "mkdocs",
+       "mkdocs-material",
+       "mkdocstrings",
+       "mkdocs-coverage",
+
+]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+addopts = [
+    "--cov=transcriber",
+    "--cov-report=term-missing",
+    "--cov-report=json",
+    "--cov-report=lcov",
+    "--cov-report=html",
+]
 
 [tool.ruff]
-target-version = "py39"
+target-version = "py312"
 line-length = 120
 fix = true
 
@@ -95,15 +162,16 @@ select = [
     # tryceratops
     "TRY",
 ]
-ignore = [
+# ignore = [
     # LineTooLong
-    "E501",
+    # "E501",
     # DoNotAssignLambda
-    "E731",
-]
+    # "E731",
+# ]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/*" = ["S101"]
+# Allow assert() (S101) and long lines (E501) for all files in the tests directory.
+"tests/**" = ["S101", "E501"]
 
 [tool.ruff.format]
 preview = true
@@ -114,4 +182,3 @@ skip_empty = true
 [tool.coverage.run]
 branch = true
 source = ["src"]
-
