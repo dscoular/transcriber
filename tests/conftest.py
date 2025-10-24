@@ -1,4 +1,5 @@
 import argparse
+import sys
 from pathlib import Path
 
 import pytest
@@ -226,3 +227,20 @@ def mock_whisper_loader(mocker: pytest.MonkeyPatch):
     mock_model = mocker.MagicMock()
     mock_model.transcribe.return_value = {"segments": [{"start": 0, "end": 1, "text": "test"}]}
     return mocker.patch("transcriber.transcribe.whisper.load_model", return_value=mock_model)
+
+
+@pytest.fixture
+def clean_transcriber_module():
+    """
+    Fixture to ensure transcriber.transcribe is removed from sys.modules
+    before running tests that use runpy.run_module.
+    """
+    module_name = "transcriber.transcribe"
+    # Store original state
+    original_module = sys.modules.pop(module_name, None)
+    # Allow the test to run
+    yield
+    # Restore original state after test, if it existed
+    if original_module:
+        sys.modules[module_name] = original_module
+    # runpy will add it back, so no need to clean up after test if it was runpy's doing
