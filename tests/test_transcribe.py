@@ -538,3 +538,33 @@ class TestTranscriber:
         expected_error_msg = f"ERROR: Empty transcribe() return value: [{dummy_mp4_file}]"
         assert expected_error_msg in output
         assert "Transcription completed for all files." in output
+
+    def test_transcribe_handles_audio_loading_errors(
+        self, mock_args: argparse.Namespace, file_structure: Path, mocker: pytest.MonkeyPatch, capsys
+    ):
+        """
+        Test that our transcribe() method handles exceptions during audio loading (e.g., FileNotFoundError).
+        """
+        transcriber = Transcriber(mock_args)
+
+        # Prepare a dummy input file path
+        non_existent_file = file_structure / "non_existent_video.mp4"
+
+        # Mock AudioSegment.from_file to raise a FileNotFoundError
+        mock_from_file = mocker.patch(
+            "pydub.AudioSegment.from_file", side_effect=FileNotFoundError("Mock file not found error")
+        )
+
+        # Call the transcribe method
+        result = transcriber.transcribe(non_existent_file)
+
+        # Assert that AudioSegment.from_file was called with the correct path
+        mock_from_file.assert_called_once_with(str(non_existent_file))
+
+        # Assert that the transcribe method returned None
+        assert result is None
+
+        # Capture output and check for the error message
+        output = capsys.readouterr().out
+        expected_error_msg = f"ERROR: skipping [{non_existent_file}]: Mock file not found error"
+        assert expected_error_msg in output

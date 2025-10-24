@@ -329,30 +329,32 @@ def parse_and_prompt_arguments(args: list[str] | None = None) -> argparse.Namesp
         print("\nYou will now be prompted for any changes to these settings.")
 
         # Prompt for changes to defaulted arguments.
-        new_suffix = input(f"Enter suffix to process (or press Enter to keep '{parsed_args.suffix}'): ").strip()
-        if new_suffix:
-            parsed_args.suffix = new_suffix
-        new_model = input(
+        # Ask the user if they want to change the suffix.
+        suffix = input(f"Enter suffix to process (or press Enter to keep '{parsed_args.suffix}'): ").strip()
+        if suffix:
+            parsed_args.suffix = suffix
+        # Ask the user if they want to change the Whisper model.
+        model = input(
             f"Enter model to use (or press Enter to keep '{parsed_args.model}', "
             f"available {', '.join(english_only_models)}): "
         ).strip()
-        if new_model:
-            parsed_args.model = new_model
-        # Perform validation on interactive input, ignoring case.
+        if model:
+            parsed_args.model = model
+        # Perform validation on interactive model input, ignoring case.
         if parsed_args.model.lower() not in [m.lower() for m in english_only_models]:
             print("Invalid model selected. Exiting...")
             sys.exit(1)  # Barf...
-        force_input = (
+        # Ask the user if they want to force overwriting of existing SRT files.
+        force = (
             input(f"Force overwrite of existing SRT files? (y/N, default: {'Y' if parsed_args.force else 'N'}): ")
             .strip()
             .lower()
         )
-        if force_input == "y":
+        if force == "y":
             parsed_args.force = True
-        dry_run_input = (
-            input(f"Enable dry run mode? (y/N, default: {'Y' if parsed_args.dry_run else 'N'}): ").strip().lower()
-        )
-        if dry_run_input == "y":
+        # Ask the user if they want to perform a "dry run" where no SRT files are written.
+        dry_run = input(f"Enable dry run mode? (y/N, default: {'Y' if parsed_args.dry_run else 'N'}): ").strip().lower()
+        if dry_run == "y":
             parsed_args.dry_run = True
 
         # Confirm the user's changes.
