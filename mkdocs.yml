@@ -26,8 +26,9 @@ plugins:
 
 theme:
   name: material
-  feature:
-    tabs: true
+  features:
+    - tabs: true
+    - content.code.copy
   palette:
     - media: "(prefers-color-scheme: light)"
       scheme: default
