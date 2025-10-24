@@ -2,24 +2,18 @@
 """
 Transcribe video files to SRT text files using a pre-trained model.
 
-Author: Doug Scoular
+**Author:** Doug Scoular<br>
+**Date:**   2025-09-16<br>
+**Email:**  dscoular@gmail.com<br>
 
-Date: 2025-09-16
+**License:** MIT
 
-Email: dscoular@gmail.com
-
-License: MIT
-
-Requires (see pyproject.toml for versions):
+**Requirements** *(see pyproject.toml for versions)*:
 
 - whisper (openai/whisper)
-
 - pysrt
-
 - numpy
-
 - AudioSegment (pydub)
-
 - ffmpeg (for audio decoding, must be installed separately)
 """
 

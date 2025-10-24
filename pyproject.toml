@@ -91,7 +91,6 @@ module = [
     "pysrt",
     "whisper",
     "pydub",
-    "pydub.*"
 ]
 ignore_missing_imports = true
 

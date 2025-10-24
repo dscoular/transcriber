@@ -10,7 +10,7 @@ copyright: |
   All rights reserved. Licensed under the MIT license.
 nav:
   - Home: index.md
-  - 🚀 Getting Started: starting.md
+  - 🚀 Getting Started: getting-started.md
   - Using Docker: docker.md
   - Modules: modules.md
   - Coverage: coverage.md
@@ -23,6 +23,7 @@ plugins:
   - coverage:
       page_path: coverage
       html_report_dir: htmlcov
+
 theme:
   name: material
   feature:
