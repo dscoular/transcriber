@@ -332,16 +332,14 @@ def parse_and_prompt_arguments(args: list[str] | None = None) -> argparse.Namesp
         # Prompt for changes to defaulted arguments.
         # Ask the user if they want to change the suffix.
         suffix = input(f"Enter suffix to process (or press Enter to keep '{parsed_args.suffix}'): ").strip()
-        if suffix:
-            parsed_args.suffix = suffix
+        parsed_args.suffix = validate_dot_suffix(suffix) or ".mp4"
         # Ask the user if they want to change the Whisper model.
         model = input(
             f"Enter model to use (or press Enter to keep '{parsed_args.model}', available {english_only_models_str}): "
         ).strip()
-        if model:
-            parsed_args.model = model
+        parsed_args.model = model or "base.en"
         # Perform validation on interactive model input, ignoring case.
-        if parsed_args.model.lower() not in [m.lower() for m in english_only_models_list]:
+        if parsed_args.model not in english_only_models_list:
             print("Invalid model selected. Exiting...")
             sys.exit(1)  # Barf...
         # Ask the user if they want to force overwriting of existing SRT files.
