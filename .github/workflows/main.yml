@@ -69,6 +69,8 @@ jobs:
 
   check-docs:
     runs-on: ubuntu-latest
+    needs: tests-and-type-check
+
     steps:
       - name: Check out
         uses: actions/checkout@v4
