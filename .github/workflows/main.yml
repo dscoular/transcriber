@@ -91,3 +91,31 @@ jobs:
 
       - name: Check if documentation can be built
         run: make docs-test
+
+  deploy-docs:
+    runs-on: ubuntu-latest
+    # This job should only run after 'check-docs' is successful
+    needs: check-docs
+    # Only deploy on pushes to the 'main' branch
+    if: github.ref == 'refs/heads/main' && success() # 'success()' ensures it only runs if 'needs' jobs succeeded
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+        # Need to fetch history for actions-gh-pages if it's operating on specific branches
+        with:
+          fetch-depth: 0
+
+      - name: Set up the environment
+        uses: ./.github/actions/setup-python-env
+
+      # To deploy, we first need to build the actual documentation site files
+      - name: Build documentation site
+        run: uv run mkdocs build # This generates the 'site/' directory by default
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./site
+          publish_branch: gh-pages
+          commit_message: 'Deploy transcriber docs to GitHub Pages'
