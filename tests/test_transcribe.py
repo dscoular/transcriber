@@ -35,16 +35,24 @@ class TestFileFilter:
 
     def test_specific_include_pattern(self, file_structure: Path):
         """
-        Test including files only from a specific directory.
+        Test including files only from a specific directory and ensuring directories are ignored.
         """
+        # For badness, create a dummy directory that matches the glob file pattern.
+        dummy_dir_path = file_structure / "Bonsai_Tutorials" / "_Model" / "Animation" / "dummy_folder.mkv"
+        dummy_dir_path.mkdir(parents=True, exist_ok=True)  # Create it as a directory
+        # Run our filter.
         ff = FileFilter(file_structure, ".mp4", include_patterns=["**/_Model/Animation/*.mkv"])
         files = ff.get_matching_files()
         assert [f.name for f in files] == ["dummy test 1.mkv"]
+        assert dummy_dir_path not in files  # Explicitly confirm the directory is not included
 
     def test_exclude_pattern(self, file_structure: Path, TEST_FILES: list[str]):
         """
         Test that exclusion patterns correctly filter files.
         """
+        # For badness, create a dummy directory that matches the glob file pattern.
+        dummy_dir_path = file_structure / "Bonsai_Tutorials" / "_Model" / "Animation" / "dummy_folder.mkv"
+        dummy_dir_path.mkdir(parents=True, exist_ok=True)  # Create it as a directory
         ff = FileFilter(file_structure, ".mp4", exclude_patterns=["**/*.mkv"])
         files = ff.get_matching_files()
         assert sorted([f.name for f in files]) == sorted([
@@ -404,10 +412,19 @@ class TestTranscriber:
         assert output == great_expectations
 
     def test_incorrect_interactive_prompting(
-        self, capsys, mocker, monkeypatch, file_structure: Path, mock_input, english_only_models_str
+        self,
+        capsys,
+        mocker,
+        monkeypatch,
+        file_structure: Path,
+        mock_input,
+        mock_transcription_deps,
+        english_only_models_str,
     ):
         """
         Test that interactive prompting handles incorrect model input.
+        While not strictly necessary, we use mock_transcription_deps here to
+        ensure consistent mocking of dependencies.
         """
         # Simulate incorrect interactive user inputs for model.
         input_path_str = str(file_structure)  # Capture the path string once
@@ -422,6 +439,9 @@ class TestTranscriber:
 
         # Use the fixture to set the inputs for builtins.input().
         mock_input(inputs)
+
+        # The mocking of AudioSegment and Whisper model is now handled by mock_transcription_deps.
+        # Ensure specific configurations for mock_model (if yielded by fixture) needed are here.
 
         with contextlib.suppress(SystemExit):
             main(args=[])
@@ -616,3 +636,98 @@ class TestTranscriber:
         output = capsys.readouterr().out
         expected_error_msg = f"ERROR: skipping [{non_existent_file}]: Mock file not found error\n"
         assert output == expected_error_msg
+
+    def test_input_path(self, capsys, file_structure: Path, mock_input: argparse.Namespace, mocker):
+        """
+        Mock full_parser.parse_args() to return an input_path whose value
+        is None.
+        """
+        inputs = iter([
+            ".mkv",  # File suffix.
+            "base.en",  # Model name.
+            "n",  # Force overwrite.
+            "y",  # Dry run.
+            "",  # Apparently, input will use this as if Enter was pressed.
+        ])
+
+        # Use the fixture to set the inputs for builtins.input().
+        mock_input(inputs)
+
+        with contextlib.suppress(SystemExit):
+            main(args=["--interactive", "--input-path", str(file_structure)])
+        output = capsys.readouterr().out
+        expected = (
+            "Entering interactive mode. Please provide the required information.\n"
+            "\n"
+            "Current settings for transcribe version 1.0.0:\n"
+            "  Suffix: .mp4\n"
+            "  Model: base.en\n"
+            "  Force overwrite: No\n"
+            "  Dry run: No\n"
+            "  Excluded patterns: (None)\n"
+            "  Include patterns: (None)\n"
+            "\n"
+            "You will now be prompted for any changes to these settings.\n"
+            "Enter suffix to process (or press Enter to keep '.mp4'): .mkv\n"
+            "Enter model to use (or press Enter to keep 'base.en', available base.en, "
+            "medium.en, small.en, tiny.en): base.en\n"
+            "Force overwrite of existing SRT files? (y/N, default: N): n\n"
+            "Enable dry run mode? (y/N, default: N): y\n"
+            "\n"
+            "Confirm settings for transcribe version 1.0.0:\n"
+            "  Suffix: .mkv\n"
+            "  Model: base.en\n"
+            "  Force overwrite: No\n"
+            "  Dry run: Yes\n"
+            "  Excluded patterns: (None)\n"
+            "  Include patterns: (None)\n"
+            "\n"
+            "Hit Enter to continue, or Ctrl-C to abort.\n"
+            "\n"
+            "We matched 2 files.\n"
+            f"DRY RUN ENABLED, skipping actual transcription of [{file_structure}/Bonsai_Tutorials/_Model/Animation/dummy test 1.mkv]\n"
+            f"DRY RUN ENABLED, skipping actual transcription of [{file_structure}/Bonsai_Tutorials/_Model/Animation/jpgs/dummy test 2.mkv]\n"
+            "Transcription completed for all files.\n"
+        )
+
+        assert output == expected
+
+    def test_suffix_none(self, capsys, file_structure: Path, mock_input: argparse.Namespace, mocker):
+        """
+        Mock full_parser.parse_args() to return an input_path whose value
+        is None.
+        """
+        input_path_str = str(file_structure)
+        inputs = iter([
+            input_path_str,  # Video files input path.
+            "",  # Empty File suffix.
+            "base.en",  # Model name.
+            "n",  # Force overwrite.
+            "y",  # Dry run.
+            "",  # Apparently, input will use this as if Enter was pressed.
+        ])
+
+        # Use the fixture to set the inputs for builtins.input().
+        mock_input(inputs)
+
+        with contextlib.suppress(SystemExit, argparse.ArgumentTypeError):
+            main(args=[])
+        output = capsys.readouterr().out
+        expected = (
+            "Entering interactive mode. Please provide the required information.\n"
+            f"Enter the directory with videos (default: .): {input_path_str}\n"
+            "\n"
+            "Current settings for transcribe version 1.0.0:\n"
+            "  Suffix: .mp4\n"
+            "  Model: base.en\n"
+            "  Force overwrite: No\n"
+            "  Dry run: No\n"
+            "  Excluded patterns: (None)\n"
+            "  Include patterns: (None)\n"
+            "\n"
+            "You will now be prompted for any changes to these settings.\n"
+            "Enter suffix to process (or press Enter to keep '.mp4'): \n"
+            "invalid suffix: '' (must start with a '.')\n"
+        )
+
+        assert output == expected
