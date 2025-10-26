@@ -44,7 +44,18 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: Run tests
-        run: uv run python -m pytest tests --cov --cov-config=pyproject.toml --cov-report=xml
+        # Your 'make test' target: @uv run python -m pytest --cov --cov-config=pyproject.toml -vv
+        # Your pyproject.toml already defines all cov-reports (term-missing, json, lcov, xml, html).
+        # So, 'make test' *will* generate htmlcov/ and coverage.xml.
+        run: make test
+
+      - name: Upload coverage artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report-${{ matrix.python-version }}
+          path: |
+            htmlcov/
+            coverage.xml
 
       - name: Check typing
         run: uv run mypy
@@ -65,5 +76,11 @@ jobs:
       - name: Set up the environment
         uses: ./.github/actions/setup-python-env
 
+      - name: Download coverage artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: coverage-report-3.12
+          path: . # Downloads htmlcov/ and coverage.xml to the root of the runner
+
       - name: Check if documentation can be built
-        run: uv run mkdocs build -s
+        run: make docs-test
