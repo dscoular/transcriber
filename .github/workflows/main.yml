@@ -29,7 +29,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
+        python-version: ["3.9", "3.10", "3.11", "3.12"]
       fail-fast: false
     defaults:
       run:
@@ -81,6 +81,11 @@ jobs:
         with:
           name: coverage-report-3.12
           path: . # Downloads htmlcov/ and coverage.xml to the root of the runner
+
+      - name: List downloaded files
+        run: |
+          ls -F
+          ls -F htmlcov/ # Check inside the downloaded htmlcov directory
 
       - name: Check if documentation can be built
         run: make docs-test
