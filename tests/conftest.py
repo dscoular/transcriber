@@ -1,8 +1,12 @@
 import argparse
+import array
+import builtins
 import sys
 from pathlib import Path
 
+import numpy as np
 import pytest
+import whisper
 
 
 @pytest.fixture(scope="session")  # Or "function", "module", "class"
@@ -143,14 +147,62 @@ def TEST_FILES():
     ]
 
 
+class NoMoreTestInputsError(Exception):
+    """
+    Raised when the simulated input stream is exhausted.
+
+    Args:
+        message (str): Custom error message.
+    """
+
+    def __init__(self, message="No more input values available"):
+        super().__init__(message)
+
+
+class MockInputNotInitialisedError(RuntimeError):
+    """
+    Raised when the mock_input fixture's callable is used before inputs have been set.
+    """
+
+    def __init__(self, message: str = "Mock input not initialised. Call mock_input_callable(inputs_iter) first."):
+        super().__init__(message)
+
+
 @pytest.fixture
-def help_text() -> str:
+def file_structure(tmp_path: Path, TEST_FILES: [str]) -> Path:
+    """Creates a standard directory and file structure for testing."""
+    for test_file in TEST_FILES:
+        file_path = tmp_path / test_file
+        file_path.parent.mkdir(parents=True, exist_ok=True)
+        file_path.touch()
+    return tmp_path
+
+
+@pytest.fixture
+def english_only_models_list() -> []:
+    """
+    Define English-only Whisper models to use in expected output.
+    """
+    english_only_models = [model for model in whisper._MODELS if model.endswith(".en")]
+    return sorted(english_only_models)
+
+
+@pytest.fixture
+def english_only_models_str(english_only_models_list) -> str:
+    """
+    Define English-only Whisper models to use in expected output.
+    """
+    return ", ".join(sorted(english_only_models_list))
+
+
+@pytest.fixture
+def help_text(english_only_models_list, english_only_models_str) -> str:
     """Returns the expected help text for the CLI."""
     return (
         "usage: transcribe.py [-h] [--dry-run] [--include [INCLUDE ...]]\n"
         "                     [--exclude [EXCLUDE ...]] [--force]\n"
         "                     [--input-path INPUT_PATH] [--suffix SUFFIX]\n"
-        "                     [--model {tiny.en,base.en,small.en,medium.en}]\n"
+        f"                     [--model {{{','.join(english_only_models_list)}}}]\n"
         "                     [--interactive] [--version]\n"
         "\n"
         "Transcribe audio files using a pre-trained model.\n"
@@ -169,24 +221,13 @@ def help_text() -> str:
         "                        Directory containing input audio files (required in\n"
         "                        non-interactive mode).\n"
         "  --suffix SUFFIX       Suffix of audio files to process (default: .mp4).\n"
-        "  --model {tiny.en,base.en,small.en,medium.en}\n"
-        "                        Pre-trained model to use (default: base.en, "
-        "available\n"
-        "                        ['tiny.en', 'base.en', 'small.en', 'medium.en']).\n"
+        f"  --model {{{','.join(english_only_models_list)}}}\n"
+        "                        Pre-trained model to use (default: base.en, available\n"
+        f"                        {english_only_models_str}).\n"
         "  --interactive         Run in interactive mode, prompting for missing\n"
         "                        arguments.\n"
         "  --version, -v         Show program's version number and exit.\n"
     )
-
-
-@pytest.fixture
-def file_structure(tmp_path: Path, TEST_FILES: [str]) -> Path:
-    """Creates a standard directory and file structure for testing."""
-    for test_file in TEST_FILES:
-        file_path = tmp_path / test_file
-        file_path.parent.mkdir(parents=True, exist_ok=True)
-        file_path.touch()
-    return tmp_path
 
 
 @pytest.fixture
@@ -223,13 +264,6 @@ def mock_args(tmp_path: Path):
 
 
 @pytest.fixture
-def mock_whisper_loader(mocker: pytest.MonkeyPatch):
-    mock_model = mocker.MagicMock()
-    mock_model.transcribe.return_value = {"segments": [{"start": 0, "end": 1, "text": "test"}]}
-    return mocker.patch("transcriber.transcribe.whisper.load_model", return_value=mock_model)
-
-
-@pytest.fixture
 def clean_transcriber_module():
     """
     Fixture to ensure transcriber.transcribe is removed from sys.modules
@@ -244,3 +278,101 @@ def clean_transcriber_module():
     if original_module:
         sys.modules[module_name] = original_module
     # runpy will add it back, so no need to clean up after test if it was runpy's doing
+
+
+@pytest.fixture
+def mock_input(monkeypatch):
+    """
+    Fixture to mock builtins.input for interactive tests.
+
+    This fixture creates a callable that allows tests to supply a sequence of inputs.
+    It uses:
+    - =nonlocal=: To create a writable closure, allowing inner functions to modify
+                  =input_iterator= from the fixture's scope.
+    - =yield=: To define setup (before =yield=) and teardown (after =yield=) logic
+               for the fixture, effectively returning a callable for test use.
+
+    Example:
+        >>> mock_input_callable = mock_input()
+        >>> mock_input_callable(iter(['input1', 'input2', ...]))
+        >>> # then proceed with your test that calls input()
+    """
+    original_input = builtins.input
+    input_iterator = None  # Will be set by the test
+
+    def _mocked_input(prompt=""):
+        nonlocal input_iterator  # Allows modification of input_iterator from outer scope
+        # Are we in the python debugger?
+        if prompt.startswith("(Pdb)"):
+            return original_input(prompt)  # allow pdb to work
+        else:
+            # For application prompts, print them using our mock's mechanism
+            if prompt:  # Only print if there's actually a prompt string
+                sys.stdout.write(prompt)
+                sys.stdout.flush()  # Ensure the prompt is written immediately
+
+            if input_iterator is None:
+                raise MockInputNotInitialisedError
+            try:
+                user_input = next(input_iterator)  # Get the user's simulated input
+                sys.stdout.write(user_input + "\n")  # Mimic user typing and pressing Enter
+                sys.stdout.flush()
+            except StopIteration as e:
+                raise NoMoreTestInputsError from e
+            else:
+                return user_input  # Return the input to the application
+
+    # This is the callable that the test will receive from the fixture.
+    # It allows the test to pass its specific inputs to the fixture.
+    def _set_inputs(inputs_iter):
+        nonlocal input_iterator  # Allows modification of input_iterator from outer scope
+        input_iterator = inputs_iter
+        monkeypatch.setattr(builtins, "input", _mocked_input)
+        return _mocked_input  # Return the actual mocked function if needed, though usually not
+
+    yield _set_inputs  # Yields the callable for tests to use; everything after this is teardown
+
+    # Teardown: Restore original builtins.input after the test is done.
+    monkeypatch.setattr(builtins, "input", original_input)
+
+
+@pytest.fixture
+def mock_transcription_deps(mocker, monkeypatch):
+    """
+    Fixture to mock the primary dependencies for the transcription process:
+    pydub.AudioSegment.from_file and whisper.load_model.
+    """
+    # sample int16 data
+    samples = np.array([0, 1000, -1000, 32767, -32768], dtype=np.int16)
+    arr = array.array("h", samples.tolist())  # 'h' = signed short (int16)
+
+    # fake AudioSegment instance
+    fake_segment = mocker.MagicMock()
+    fake_segment.set_frame_rate.return_value = fake_segment
+    fake_segment.set_channels.return_value = fake_segment
+    fake_segment.get_array_of_samples.return_value = arr
+
+    # patch AudioSegment.from_file to return fake_segment.
+    mocker.patch("pydub.AudioSegment.from_file", return_value=fake_segment)
+    # Using mocker.patch here is generally preferred over monkeypatch.setattr
+    # because mocker automatically handles cleanup at the end of the test.
+
+    # Create our fake return value for the transcribe method.
+    fake_transcription = {
+        "segments": [
+            {"start": 0.0, "end": 5.0, "text": "This is a test transcription."},
+            {"start": 5.0, "end": 10.0, "text": "The transcription should be realistic."},
+        ]
+    }
+    # Create a return value for the mock model's transcribe method.
+    mock_model = mocker.Mock()
+    mock_model.transcribe.return_value = fake_transcription
+
+    # Patch the whisper.load_model to return our mock model.
+    mocker.patch("whisper.load_model", return_value=mock_model)
+
+    # If your tests ever need to inspect mock_model or fake_transcription,
+    # you could yield them as a tuple:
+    # yield mock_model, fake_transcription
+    # For now, simply yielding None (or just 'yield') is sufficient as the mocks are set globally.
+    yield

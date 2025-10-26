@@ -16,9 +16,9 @@ check: ## Run code quality tools.
 	@uv run deptry src
 
 .PHONY: test
-test: ## Test the code with pytest
+test: ## Test the code with pytest -vv gives us pytest-smart output.
 	@echo "🚀 Testing code: Running pytest"
-	@uv run python -m pytest --cov --cov-config=pyproject.toml
+	@uv run python -m pytest --cov --cov-config=pyproject.toml -vv
 
 .PHONY: build
 build: clean-build ## Build wheel file

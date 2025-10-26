@@ -280,13 +280,14 @@ def parse_and_prompt_arguments(args: list[str] | None = None) -> argparse.Namesp
         "--suffix", type=validate_dot_suffix, default=".mp4", help="Suffix of audio files to process (default: .mp4)."
     )
     # List of available Whisper models
-    english_only_models = [model for model in whisper._MODELS if model.endswith(".en")]
+    english_only_models_list = sorted([model for model in whisper._MODELS if model.endswith(".en")])
+    english_only_models_str = ", ".join(english_only_models_list)
     full_parser.add_argument(
         "--model",
         type=str,
         default="base.en",
-        choices=english_only_models,
-        help=f"Pre-trained model to use (default: base.en, available {english_only_models}).",
+        choices=english_only_models_list,
+        help=f"Pre-trained model to use (default: base.en, available {english_only_models_str}).",
     )
     full_parser.add_argument(
         "--interactive", action="store_true", help="Run in interactive mode, prompting for missing arguments."
@@ -335,13 +336,12 @@ def parse_and_prompt_arguments(args: list[str] | None = None) -> argparse.Namesp
             parsed_args.suffix = suffix
         # Ask the user if they want to change the Whisper model.
         model = input(
-            f"Enter model to use (or press Enter to keep '{parsed_args.model}', "
-            f"available {', '.join(english_only_models)}): "
+            f"Enter model to use (or press Enter to keep '{parsed_args.model}', available {english_only_models_str}): "
         ).strip()
         if model:
             parsed_args.model = model
         # Perform validation on interactive model input, ignoring case.
-        if parsed_args.model.lower() not in [m.lower() for m in english_only_models]:
+        if parsed_args.model.lower() not in [m.lower() for m in english_only_models_list]:
             print("Invalid model selected. Exiting...")
             sys.exit(1)  # Barf...
         # Ask the user if they want to force overwriting of existing SRT files.

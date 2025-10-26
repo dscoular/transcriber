@@ -43,6 +43,7 @@ dev = [
     "tox-uv>=1.11.3",
     "deptry>=0.23.0",
     "mypy>=0.991",
+    "pysonar>=1.2.0",
     "pytest-cov>=4.0.0",
     "ruff>=0.11.5",
     "mkdocs>=1.4.2",
@@ -61,6 +62,7 @@ dev = [
     "tox-uv>=1.11.3",
     "deptry>=0.23.0",
     "mypy>=0.991",
+    "pysonar>=1.2.0",
     "pytest-cov>=4.0.0",
     "ruff>=0.11.5",
     "mkdocs>=1.4.2",
@@ -104,6 +106,7 @@ DEP002 = [
        "tox-uv",
        "deptry",
        "mypy",
+       "pysonar",
        "pytest-cov",
        "ruff",
        "mkdocs",
@@ -120,6 +123,7 @@ addopts = [
     "--cov-report=term-missing",
     "--cov-report=json",
     "--cov-report=lcov",
+    "--cov-report=xml",
     "--cov-report=html",
 ]
 
