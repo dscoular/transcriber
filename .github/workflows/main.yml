@@ -98,6 +98,8 @@ jobs:
     needs: check-docs
     # Only deploy on pushes to the 'main' branch
     if: github.ref == 'refs/heads/main' && success() # 'success()' ensures it only runs if 'needs' jobs succeeded
+    permissions:
+      contents: write # Grant write permission to the GITHUB_TOKEN for this job
     steps:
       - name: Check out
         uses: actions/checkout@v4
