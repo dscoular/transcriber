@@ -727,7 +727,34 @@ class TestTranscriber:
             "\n"
             "You will now be prompted for any changes to these settings.\n"
             "Enter suffix to process (or press Enter to keep '.mp4'): \n"
-            "invalid suffix: '' (must start with a '.')\n"
+            "Enter model to use (or press Enter to keep 'base.en', available base.en, "
+            "medium.en, small.en, tiny.en): base.en\n"
+            "Force overwrite of existing SRT files? (y/N, default: N): n\n"
+            "Enable dry run mode? (y/N, default: N): y\n"
+            "\n"
+            "Confirm settings for transcribe version 1.0.0:\n"
+            "  Suffix: .mp4\n"
+            "  Model: base.en\n"
+            "  Force overwrite: No\n"
+            "  Dry run: Yes\n"
+            "  Excluded patterns: (None)\n"
+            "  Include patterns: (None)\n"
+            "\n"
+            "Hit Enter to continue, or Ctrl-C to abort.\n"
+            "\n"
+            "We matched 126 files.\n"
         )
-
+        # append expected dry run lines for each matched file.
+        expected += (
+            "\n".join([
+                (
+                    f"DRY RUN ENABLED, skipping actual transcription of "
+                    f"[{file_structure}/Bonsai_Tutorials/"
+                    f"{file_path.relative_to(file_structure / 'Bonsai_Tutorials')}]"
+                )
+                for file_path in sorted((file_structure / "Bonsai_Tutorials").rglob("*.mp4"))
+            ])
+            + "\n"
+        )
+        expected += "Transcription completed for all files.\n"
         assert output == expected

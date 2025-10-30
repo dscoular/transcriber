@@ -20,6 +20,9 @@ plugins:
       handlers:
         python:
           paths: ["src/transcriber"]
+          options:
+            docstring_style: google
+            annotations_path: source
   - coverage:
       page_path: coverage
       html_report_dir: htmlcov
