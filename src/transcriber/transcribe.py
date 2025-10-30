@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-Transcribe video files to SRT text files using a pre-trained model.
+Transcribe video files to SRT subtitle text files using a pre-trained model.
 
 **Author:** Doug Scoular<br>
 **Date:**   2025-09-16<br>
@@ -8,13 +8,17 @@ Transcribe video files to SRT text files using a pre-trained model.
 
 **License:** MIT
 
-**Requirements** *(see pyproject.toml for versions)*:
+The main class that does all the work is **Transcribe** it employs
+an instance of the **FileFilter** class to find the video files it is going to
+process and turn into SRT subtitle text files.
+
+**Requirements:** *(see pyproject.toml for versions)*:
 
 - whisper (openai/whisper)
 - pysrt
 - numpy
 - AudioSegment (pydub)
-- ffmpeg (for audio decoding, must be installed separately)
+- ffmpeg (for audio decoding, must be installed separately into the Operating System)
 """
 
 import argparse
@@ -32,9 +36,12 @@ __VERSION__ = "1.0.0"
 
 class FileFilter:
     """
-    Initializes the file filter with input_path, suffix, include and exclude glob patterns.
+    A class which recursively searches the given input_path filtering files it finds
+    based on a matching filename "suffix" e.g. .mp4 combined with "include" and "exclude"
+    rglob patterns.
 
     Examples:
+        >>> # Instantiating our FileFilter instance and obtaining matching files.
         >>> filter = FileFilter(Path('.'),
         ...                     '.mp4',
         ...                     include_patterns=['**/*.mp4'],
@@ -50,8 +57,6 @@ class FileFilter:
         suffix (Optional[str]): The file suffix to filter by (defaults to '.mp4').
         include_patterns (Optional[list[str]]): List of glob patterns to include.
         exclude_patterns (Optional[list[str]]): List of glob patterns to exclude.
-    Returns:
-        FileFilter: An instance of the FileFilter class.
     """
 
     def __init__(
@@ -65,16 +70,23 @@ class FileFilter:
         self.suffix = suffix
         # If the user provides no include patterns, the default is to find
         # all files with the given suffix, recursively.
+        # First, remove any empty, duplicate patterns. Our argument parsing should have already handled this,
+        self.include_patterns = sorted({pattern for pattern in include_patterns or [] if pattern})
+        self.exclude_patterns = sorted({pattern for pattern in exclude_patterns or [] if pattern})
+        # Use the default include pattern if none provided.
         self.include_patterns = include_patterns or [f"**/*{self.suffix}"]
+        # If no exclude patterns are provided, default to an empty list.
         self.exclude_patterns = exclude_patterns or []
 
     def get_matching_files(self) -> list[Path]:
         """
-        Scans the root directory using glob patterns and returns a list of
-        all files that match the filter criteria.
+        Recursively Scans the self.input_path directory using
+        rglob patterns and returns a list of all files that match our
+        FileFilter instance's criteria (suffix, include_patterns and
+        exclude_patterns).
 
         Returns:
-            list[Path]: A sorted list of Path objects matching the filter criteria.
+            A sorted list of Path objects matching the filter criteria.
         """
         included_files: set[Path] = set()
         for pattern in self.include_patterns:
@@ -104,24 +116,35 @@ class FileFilter:
 
 class Transcriber:
     """
-    A class to handle transcription of video files to SRT text files
-    using a pre-trained model.
+    A class to handle transcription of video files to SRT subtitle text files
+    using an OpenAI/Whisper pre-trained model. Takes our parsed command-line
+    arguments to instantiate an instance which we can then use to
+    transcribe videos to text.
 
     Examples:
-        >>> args = argparse.Namespace(
-        ...     "input_path": "./videos",
-        ...     "force": True,
-        ...     "include": [ '**/*.mp4' ],
-        ...     "exclude": [ '**/skip_this.mp4' ])
-        >>> transcriber = Transcriber(args)
+        >>> # Manually create our arguments namespace.
+        >>> my_args = argparse.Namespace(input_path='/tmp/Bonsai_Tutorials')
+        >>> my_args.model = 'base.en' # Choose the smallest transcription model.
+        >>> my_args.force = True  # Force overwriting existing ".srt" files.
+        >>> my_args.suffix = '.mp4'  # Only consider ".mp4" files.
+        >>> # Include "rglob" patterns we are interested in.
+        >>> my_args.include = ['**/001000_20250218_1337 - moving objects and setting a few preferences.mp4']
+        >>> # Exclude "rglob" patterns we don't want to process.
+        >>> my_args.excluded = ['**/skip_this.mp4']
+        >>> my_args.dry_run = False  # Actually process the files.
+        >>> my_args.interactive = False #  Don't interactively prompt the user.
+        >>> # Instantiate our Transcriber instance with our arguments.
+        >>> transcriber = Transcriber(my_args)
         >>> # Start the transcription process.
         >>> transcriber.videos_to_text()
+        We matched 1 files.
+        PROCESSING: /tmp/Bonsai_Tutorials/001000_20250218_1337 - moving objects and setting a few preferences/001000_20250218_1337 - moving objects and setting a few preferences.mp4 -> /tmp/Bonsai_Tutorials/001000_20250218_1337 - moving objects and setting a few preferences/001000_20250218_1337 - moving objects and setting a few preferences.srt...
+        SUCCESS: Transcription saved to [/tmp/Bonsai_Tutorials/001000_20250218_1337 - moving objects and setting a few preferences/001000_20250218_1337 - moving objects and setting a few preferences.srt]
+        Transcription completed for all files.
 
     Args:
-        args (argparse.Namespace): Parsed command-line arguments.
-    Returns:
-        None
-    """
+        args: Parsed command-line arguments.
+    """  # noqa: E501
 
     # Instance variables with types (Python 3.6+ allows this)
     force: bool
@@ -133,21 +156,38 @@ class Transcriber:
     def __init__(self, args: argparse.Namespace) -> None:
         self.input_path = Path(args.input_path).expanduser()
         self.force = args.force
-        self.model = whisper.load_model(args.model)
+        self.model = args.model
         self.suffix = args.suffix
         self.dry_run = args.dry_run
         self.filter = FileFilter(self.input_path, self.suffix, args.include, args.exclude)
 
     def transcribe(self, input_file: Path) -> dict[str, Any] | None:
         """
-        Transcribe the audio from the given audio input file and return a dictionary of
-        transcribed text and other relevant information.
-        Returns None if transcription fails.
+        Transcribe the audio from the given video input file and returns a dictionary of
+        transcribed text and other relevant metadata. We return None if the transcription fails.
+
+        Examples:
+            >>> # Transcribe our video to our dictionary of subtitle metadata.
+            >>> srt_metadata = transcriber.transcribe("/path/to/video.mp4")
+            >>> pp srt_metadata
+            {
+              'language': 'en',
+              'segments': [{'avg_logprob': -0.18892038023317015,
+               'compression_ratio': 1.5515463917525774,
+               'end': 6.28,
+               'id': 0,
+               'no_speech_prob': 0.09762045741081238,
+               'seek': 0,
+               'start': 0.0,
+               'temperature': 0.0,
+               'text': ' Welcome to Vanilla Blender. I figured before we get into Bonsai we can go'
+               ...
+            }
 
         Args:
-            input_file (Path): The root directory to scan for files.
+            input_file: The root directory to scan for files.
         Returns:
-            A dictionary with transcription results, or None on failure.
+            A dictionary with a dictionary of transcription results, or None on failure.
         """
         try:
             # pydub will internally use ffmpeg if it's available
@@ -164,8 +204,9 @@ class Transcriber:
             # Convert to float32 and normalize
             audio_data_float: np.ndarray = audio_data.astype(np.float32) / 32768.0
 
-            # Use whisper's transcribe method to get the transcription dictionary.
-            result: dict[str, Any] = self.model.transcribe(audio_data_float, fp16=False)
+            # Use whisper's transcribe method to get the transcription model.
+            model = whisper.load_model(self.model)
+            result: dict[str, Any] = model.transcribe(audio_data_float, fp16=False)
         except (FileNotFoundError, ValueError, TypeError) as e:
             # Catch known potential errors.
             print(f"ERROR: skipping [{input_file}]: {e}")
@@ -175,10 +216,15 @@ class Transcriber:
 
     def videos_to_text(self) -> None:
         """
-        Convert video files in the input directory to audio and transcribe them to SRT text files.
+        Convert video files in the input path to audio and transcribe them to SRT text files
+        based on the arguments given when we instantiated our Transcriber class.
         """
         # Enumerate our input files.
         for input_filename in sorted(self.filter.get_matching_files()):
+            if self.dry_run:
+                print(f"DRY RUN ENABLED, skipping actual transcription of [{input_filename}]")
+                continue
+            # Are we likely to overwrite an existing .srt file?
             output_srt_file = input_filename.with_suffix(".srt")
             if not self.force and output_srt_file.exists():
                 print(
@@ -187,14 +233,10 @@ class Transcriber:
                 )
                 continue
 
+            print(f"PROCESSING: {input_filename} -> {output_srt_file}...")
             transcription: dict[str, Any] | None = None
             try:
-                if self.dry_run:
-                    print(f"DRY RUN ENABLED, skipping actual transcription of [{input_filename}]")
-                    continue
-                else:
-                    print(f"PROCESSING: {input_filename} -> {output_srt_file}...")
-                    transcription = self.transcribe(input_filename)
+                transcription = self.transcribe(input_filename)
             except IndexError as err:
                 print(f"ERROR: Skipping [{input_filename}] due to [{err}]")
                 continue
@@ -230,9 +272,11 @@ def validate_dot_suffix(value: str) -> str:
     starting with a dot '.'.
 
     Args:
-        value (str): The input string to validate.
+        value: The input string to validate.
+
     Returns:
-        str: The validated suffix string.
+        The validated suffix string.
+
     Raises:
         argparse.ArgumentTypeError: If the value is invalid.
     """
@@ -246,14 +290,20 @@ def validate_dot_suffix(value: str) -> str:
 
 def parse_and_prompt_arguments(args: list[str] | None = None) -> argparse.Namespace:
     """
-    Parse command-line arguments and prompt for missing ones if in interactive mode.
+    Parse command-line arguments and prompt for a subset of missing ones if in interactive mode.
+    We don't bother prompting for "include" or "exclude" arguments since we would encourage
+    you to learn to use the command-line arguments for more advance usage.
 
     Args:
-        args (Optional[list[str]]): List of command-line arguments to parse.
+        args: List of command-line arguments to parse.
+
+
     Returns:
-        argparse.Namespace: The parsed command-line arguments.
+        The parsed command-line arguments.
+
     Raises:
         SystemExit: If version is requested or invalid input is provided.
+
     """
     # Define the full set of arguments
     full_parser = argparse.ArgumentParser(description="Transcribe audio files using a pre-trained model.")
@@ -318,6 +368,10 @@ def parse_and_prompt_arguments(args: list[str] | None = None) -> argparse.Namesp
             input_path = input("Enter the directory with videos (default: .): ").strip() or "."
             parsed_args.input_path = input_path
 
+        # Enumerate include/exclude patterns to remove empties and duplicates.
+        parsed_args.exclude = sorted({pattern for pattern in parsed_args.exclude or [] if pattern})
+        parsed_args.include = sorted({pattern for pattern in parsed_args.include or [] if pattern})
+
         # The other arguments have defaults, but you can still ask for
         # confirmation or allow changes.
         print(f"\nCurrent settings for transcribe version {__VERSION__}:")
@@ -332,7 +386,10 @@ def parse_and_prompt_arguments(args: list[str] | None = None) -> argparse.Namesp
         # Prompt for changes to defaulted arguments.
         # Ask the user if they want to change the suffix.
         suffix = input(f"Enter suffix to process (or press Enter to keep '{parsed_args.suffix}'): ").strip()
-        parsed_args.suffix = validate_dot_suffix(suffix) or ".mp4"
+        # No suffix given, use our default.
+        if not suffix:
+            suffix = ".mp4"
+        parsed_args.suffix = validate_dot_suffix(suffix)
         # Ask the user if they want to change the Whisper model.
         model = input(
             f"Enter model to use (or press Enter to keep '{parsed_args.model}', available {english_only_models_str}): "
@@ -381,6 +438,7 @@ def parse_and_prompt_arguments(args: list[str] | None = None) -> argparse.Namesp
 def main(args: list[str] | None = None) -> None:
     """
     Main function to run the transcriber.
+
     Args:
         args (Optional[list[str]]): List of command-line arguments to parse.
     """
