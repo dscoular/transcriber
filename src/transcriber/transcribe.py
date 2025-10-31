@@ -375,6 +375,7 @@ def parse_and_prompt_arguments(args: list[str] | None = None) -> argparse.Namesp
         # The other arguments have defaults, but you can still ask for
         # confirmation or allow changes.
         print(f"\nCurrent settings for transcribe version {__VERSION__}:")
+        print(f"  Input Path: {parsed_args.input_path}")
         print(f"  Suffix: {parsed_args.suffix}")
         print(f"  Model: {parsed_args.model}")
         print(f"  Force overwrite: {'Yes' if parsed_args.force else 'No'}")
