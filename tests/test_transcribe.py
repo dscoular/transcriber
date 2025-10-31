@@ -238,6 +238,7 @@ class TestTranscriber:
             f"Enter the directory with videos (default: .): {input_path_str}\n"
             f"\n"  # This newline likely comes from the print before "Current settings"
             f"Current settings for transcribe version {__VERSION__}:\n"
+            f"  Input Path: {input_path_str}\n"
             f"  Suffix: .mp4\n"
             f"  Model: base.en\n"
             f"  Force overwrite: No\n"
@@ -303,6 +304,7 @@ class TestTranscriber:
             f"Enter the directory with videos (default: .): {input_path_str}\n"
             f"\n"  # This newline likely comes from the print before "Current settings"
             f"Current settings for transcribe version {__VERSION__}:\n"
+            f"  Input Path: {input_path_str}\n"
             f"  Suffix: .mp4\n"
             f"  Model: base.en\n"
             f"  Force overwrite: No\n"
@@ -373,6 +375,7 @@ class TestTranscriber:
             f"Enter the directory with videos (default: .): {input_path_str}\n"
             f"\n"  # This newline likely comes from the print before "Current settings"
             f"Current settings for transcribe version {__VERSION__}:\n"
+            f"  Input Path: {input_path_str}\n"
             f"  Suffix: .mp4\n"
             f"  Model: base.en\n"
             f"  Force overwrite: No\n"
@@ -453,6 +456,7 @@ class TestTranscriber:
             f"Enter the directory with videos (default: .): {input_path_str}\n"
             f"\n"  # This newline likely comes from the print before "Current settings"
             f"Current settings for transcribe version {__VERSION__}:\n"
+            f"  Input Path: {input_path_str}\n"
             f"  Suffix: .mp4\n"
             f"  Model: base.en\n"
             f"  Force overwrite: No\n"
@@ -653,13 +657,15 @@ class TestTranscriber:
         # Use the fixture to set the inputs for builtins.input().
         mock_input(inputs)
 
+        input_path_str = str(file_structure)  # Capture the path string once
         with contextlib.suppress(SystemExit):
-            main(args=["--interactive", "--input-path", str(file_structure)])
+            main(args=["--interactive", "--input-path", input_path_str])
         output = capsys.readouterr().out
         expected = (
             "Entering interactive mode. Please provide the required information.\n"
             "\n"
             "Current settings for transcribe version 1.0.0:\n"
+            f"  Input Path: {input_path_str}\n"
             "  Suffix: .mp4\n"
             "  Model: base.en\n"
             "  Force overwrite: No\n"
@@ -718,6 +724,7 @@ class TestTranscriber:
             f"Enter the directory with videos (default: .): {input_path_str}\n"
             "\n"
             "Current settings for transcribe version 1.0.0:\n"
+            f"  Input Path: {input_path_str}\n"
             "  Suffix: .mp4\n"
             "  Model: base.en\n"
             "  Force overwrite: No\n"

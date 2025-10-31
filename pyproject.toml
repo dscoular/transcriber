@@ -129,6 +129,14 @@ addopts = [
     "--cov-report=lcov",
     "--cov-report=xml",
     "--cov-report=html",
+    "--no-cov-on-fail"
+]
+# Hopefully pydub will get its act together upstream.
+filterwarnings = [
+    # Only suppress repetition for SyntaxWarning from pydub (covers "invalid escape sequence")
+    "once::SyntaxWarning:pydub.*",
+    # Only suppress repetition for deprecation warnings containing "audioop" from pydub.utils
+    "once:audioop:DeprecationWarning:pydub.utils",
 ]
 
 [tool.ruff]

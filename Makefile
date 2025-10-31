@@ -31,7 +31,7 @@ check: ## Run code quality tools.
 .PHONY: test
 test: ## Test the code with pytest -vv gives us pytest-smart output.
 	@echo "🚀 Testing code: Running pytest"
-	@uv run python -m pytest --cov --cov-config=pyproject.toml -vv
+	@uv run python -m pytest tests/ --cov --cov-config=pyproject.toml -vv
 
 .PHONY: clean-build
 clean-build: ## Clean build artifacts
@@ -52,7 +52,7 @@ docs: ## Build and serve the documentation
 	@./.venv/bin/mkdocs serve --dev-addr 127.0.0.1:8000 --watch docs --watch src/transcriber
 
 .PHONY: man
-man: ## Build and serve the documentation
+man: ## Show what passes for a manual page in python
 	@uv run python src/transcriber/transcribe.py --help
 
 .PHONY: transcribe

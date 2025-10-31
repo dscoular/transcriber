@@ -5,64 +5,22 @@
 [![Commit activity](https://img.shields.io/github/commit-activity/m/dscoular/transcriber)](https://img.shields.io/github/commit-activity/m/dscoular/transcriber)
 [![License](https://img.shields.io/github/license/dscoular/transcriber)](https://img.shields.io/github/license/dscoular/transcriber)
 
-A python script which uses whisper to transcribe videos and outputs SRT files.
+A python script which uses whisper to transcribe videos and outputs SRT subtitle text files.
 
 - **Github repository**: <https://github.com/dscoular/transcriber/>
 - **Documentation** <https://dscoular.github.io/transcriber/>
 
-## Getting started with your project
+# UV or Docker - that is the question.
 
-### 1. Create a New Repository
+If you have `uv` in your `PATH` and `ffmpeg` installed in your operating system, you should
+be able to do the following to install and use this package.
 
-First, create a repository on GitHub with the same name as this project, and then run the following commands:
+1. `make` - runs the default target of `make help` to show help on all the `make` targets.
+2. `make install` - installs the virtual environment and pre-commit hooks.
+3. `make check` - **optional**, runs the code quality tools.
+4. `make test` - **optional**, runs unit tests.
+5. `make docs-test` - **optional**, generate HTML documents in the `site` directory.
+6. `make transcribe` - by default, this converts the videos in the input path to `.srt` subtitle text files.
 
-```bash
-git init -b main
-git add .
-git commit -m "init commit"
-git remote add origin git@github.com:dscoular/transcriber.git
-git push -u origin main
-```
-
-### 2. Set Up Your Development Environment
-
-Then, install the environment and the pre-commit hooks with
-
-```bash
-make install
-```
-
-This will also generate your `uv.lock` file
-
-### 3. Run the pre-commit hooks
-
-Initially, the CI/CD pipeline might be failing due to formatting issues. To resolve those run:
-
-```bash
-uv run pre-commit run -a
-```
-
-### 4. Commit the changes
-
-Lastly, commit the changes made by the two steps above to your repository.
-
-```bash
-git add .
-git commit -m 'Fix formatting issues'
-git push origin main
-```
-
-You are now ready to start development on your project!
-The CI/CD pipeline will be triggered when you open a pull request, merge to main, or when you create a new release.
-
-To finalize the set-up for publishing to PyPI, see [here](https://fpgmaas.github.io/cookiecutter-uv/features/publishing/#set-up-for-pypi).
-For activating the automatic documentation with MkDocs, see [here](https://fpgmaas.github.io/cookiecutter-uv/features/mkdocs/#enabling-the-documentation-on-github).
-To enable the code coverage reports, see [here](https://fpgmaas.github.io/cookiecutter-uv/features/codecov/).
-
-## Releasing a new version
-
-
-
----
-
-Repository initiated with [fpgmaas/cookiecutter-uv](https://github.com/fpgmaas/cookiecutter-uv).
+Doug Scoular
+dscoular@gmail.com
